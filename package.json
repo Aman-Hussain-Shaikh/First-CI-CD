@@ -1,0 +1,12 @@
+{
+  "name": "modern-portfolio",
+  "version": "1.0.0",
+  "description": "Modern portfolio website with CI/CD",
+  "scripts": {
+    "test": "echo 'Tests run in browser - open test.html'",
+    "build": "echo 'Static site - no build needed'"
+  },
+  "keywords": ["portfolio", "website", "netlify"],
+  "author": "Your Name",
+  "license": "MIT"
+}

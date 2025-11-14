@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runner</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4ec9b0;
+        }
+        #output {
+            background: #252526;
+            padding: 1rem;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .pass {
+            color: #4ec9b0;
+        }
+        .fail {
+            color: #f48771;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Runner</h1>
+    <div id="output">Running tests...</div>
+
+    <script src="index.html" type="text/html" id="main-page"></script>
+    <script>
+        // Load main page in iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        const mainPageContent = document.getElementById('main-page').textContent;
+        iframe.contentDocument.write(mainPageContent);
+        iframe.contentDocument.close();
+
+        // Wait for iframe to load
+        iframe.onload = () => {
+            const iframeWindow = iframe.contentWindow;
+            
+            // Copy functions from iframe
+            window.incrementCounter = iframeWindow.incrementCounter;
+            window.resetCounter = iframeWindow.resetCounter;
+            
+            // Copy document elements
+            Object.defineProperty(window, 'document', {
+                value: iframe.contentDocument,
+                writable: false
+            });
+
+            // Load and run tests
+            const script = document.createElement('script');
+            script.src = 'tests.js';
+            script.onload = async () => {
+                const output = document.getElementById('output');
+                
+                // Capture console output
+                const logs = [];
+                const originalLog = console.log;
+                const originalError = console.error;
+                
+                console.log = (...args) => {
+                    logs.push({ type: 'log', message: args.join(' ') });
+                    originalLog.apply(console, args);
+                };
+                
+                console.error = (...args) => {
+                    logs.push({ type: 'error', message: args.join(' ') });
+                    originalError.apply(console, args);
+                };
+
+                // Run tests
+                const success = await runner.run();
+                
+                // Restore console
+                console.log = originalLog;
+                console.error = originalError;
+                
+                // Display results
+                output.innerHTML = logs.map(log => {
+                    const className = log.message.includes('✓') ? 'pass' : 
+                                    log.message.includes('✗') ? 'fail' : '';
+                    return `<span class="${className}">${log.message}</span>`;
+                }).join('\n');
+                
+                // Exit with appropriate code (for CI/CD)
+                if (!success && typeof process !== 'undefined') {
+                    process.exit(1);
+                }
+            };
+            document.head.appendChild(script);
+        };
+    </script>
+</body>
+</html>
